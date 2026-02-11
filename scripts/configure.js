@@ -87,9 +87,25 @@ if (!config.gateway.mode) {
 // headers (X-Forwarded-For, etc.) and treats proxied connections as local.
 // Without this, connections through Coolify/Traefik → nginx → gateway are
 // rejected with "token_missing" because proxy headers from an untrusted
-// address are ignored.
-if (!config.gateway.trustedProxies) {
-  config.gateway.trustedProxies = ["127.0.0.1/8", "::1/128"];
+// address are ignored.  (See: openclaw #6959, #4941)
+//
+// Default ranges cover: loopback + Docker/Coolify internal networks.
+// Override with OPENCLAW_TRUSTED_PROXIES env var (comma-separated CIDRs).
+const defaultProxies = [
+  "127.0.0.1/8", "::1/128",           // loopback (nginx in same container)
+  "10.0.0.0/8",                        // Docker overlay / Coolify networks
+  "172.16.0.0/12",                     // Docker default bridge
+  "192.168.0.0/16",                    // Docker Desktop NAT (macOS/Windows)
+  "fc00::/7",                          // IPv6 ULA (Docker IPv6 networks)
+];
+if (process.env.OPENCLAW_TRUSTED_PROXIES) {
+  config.gateway.trustedProxies = process.env.OPENCLAW_TRUSTED_PROXIES.split(",").map(s => s.trim());
+  console.log("[configure] trustedProxies (from env):", config.gateway.trustedProxies);
+} else if (!config.gateway.trustedProxies) {
+  config.gateway.trustedProxies = defaultProxies;
+  console.log("[configure] trustedProxies (defaults):", defaultProxies);
+} else {
+  console.log("[configure] trustedProxies (from config):", config.gateway.trustedProxies);
 }
 
 // Gateway token: required via OPENCLAW_GATEWAY_TOKEN env var (enforced by entrypoint.sh)

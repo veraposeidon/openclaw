@@ -71,6 +71,24 @@ echo "[entrypoint] running openclaw doctor --fix..."
 cd /opt/openclaw/app
 openclaw doctor --fix 2>&1 || true
 
+# ── Re-inject trustedProxies (doctor --fix may overwrite it) ─────────────
+node -e "
+  const fs = require('fs');
+  const f = '$STATE_DIR/openclaw.json';
+  const c = JSON.parse(fs.readFileSync(f, 'utf8'));
+  if (!c.gateway) c.gateway = {};
+  if (!c.gateway.trustedProxies || c.gateway.trustedProxies.length === 0) {
+    const env = (process.env.OPENCLAW_TRUSTED_PROXIES || '').trim();
+    c.gateway.trustedProxies = env
+      ? env.split(',').map(s => s.trim())
+      : ['127.0.0.1/8','::1/128','10.0.0.0/8','172.16.0.0/12','192.168.0.0/16','fc00::/7'];
+    fs.writeFileSync(f, JSON.stringify(c, null, 2));
+    console.log('[entrypoint] re-injected trustedProxies:', c.gateway.trustedProxies);
+  } else {
+    console.log('[entrypoint] trustedProxies intact:', c.gateway.trustedProxies);
+  }
+"
+
 # ── Read hooks path from generated config (if hooks enabled) ─────────────────
 HOOKS_PATH=""
 HOOKS_PATH=$(node -e "
