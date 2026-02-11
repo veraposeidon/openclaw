@@ -131,17 +131,17 @@ const opencodeKey = process.env.OPENCODE_API_KEY || process.env.OPENCODE_ZEN_API
 
 // [envVar, label, providerKey in models.providers]
 const builtinProviders = [
-  ["ANTHROPIC_API_KEY",    "Anthropic",          "anthropic"],
-  ["OPENAI_API_KEY",       "OpenAI",             "openai"],
-  ["OPENROUTER_API_KEY",   "OpenRouter",         "openrouter"],
-  ["GEMINI_API_KEY",       "Google Gemini",      "google"],
-  ["XAI_API_KEY",          "xAI",                "xai"],
-  ["GROQ_API_KEY",         "Groq",               "groq"],
-  ["MISTRAL_API_KEY",      "Mistral",            "mistral"],
-  ["CEREBRAS_API_KEY",     "Cerebras",           "cerebras"],
-  ["ZAI_API_KEY",          "ZAI",                "zai"],
-  ["AI_GATEWAY_API_KEY",   "Vercel AI Gateway",  "vercel-ai-gateway"],
-  ["COPILOT_GITHUB_TOKEN", "GitHub Copilot",     "github-copilot"],
+  ["ANTHROPIC_API_KEY", "Anthropic", "anthropic"],
+  ["OPENAI_API_KEY", "OpenAI", "openai"],
+  ["OPENROUTER_API_KEY", "OpenRouter", "openrouter"],
+  ["GEMINI_API_KEY", "Google Gemini", "google"],
+  ["XAI_API_KEY", "xAI", "xai"],
+  ["GROQ_API_KEY", "Groq", "groq"],
+  ["MISTRAL_API_KEY", "Mistral", "mistral"],
+  ["CEREBRAS_API_KEY", "Cerebras", "cerebras"],
+  ["ZAI_API_KEY", "ZAI", "zai"],
+  ["AI_GATEWAY_API_KEY", "Vercel AI Gateway", "vercel-ai-gateway"],
+  ["COPILOT_GITHUB_TOKEN", "GitHub Copilot", "github-copilot"],
 ];
 
 for (const [envKey, label, providerKey] of builtinProviders) {
@@ -276,10 +276,22 @@ if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
     ],
   };
   ensure(config, "models");
+  // Parse providerFilter: env var can be a JSON array (e.g. '["anthropic"]')
+  // or a plain string (e.g. 'anthropic'). Config expects an array.
+  let providerFilter = ["anthropic"]; // default
+  if (process.env.BEDROCK_PROVIDER_FILTER) {
+    try {
+      const parsed = JSON.parse(process.env.BEDROCK_PROVIDER_FILTER);
+      providerFilter = Array.isArray(parsed) ? parsed : [parsed];
+    } catch {
+      // Not valid JSON — treat as a plain string or comma-separated list
+      providerFilter = process.env.BEDROCK_PROVIDER_FILTER.split(",").map(s => s.trim());
+    }
+  }
   config.models.bedrockDiscovery = {
     enabled: true,
     region,
-    providerFilter: process.env.BEDROCK_PROVIDER_FILTER || "anthropic",
+    providerFilter,
     refreshInterval: 3600,
   };
 } else if (!hasCustomConfig && config.models?.providers?.["amazon-bedrock"]) {
@@ -307,26 +319,26 @@ if (ollamaUrl) {
 
 // ── Primary model selection (first available provider wins) ─────────────────
 const primaryCandidates = [
-  [process.env.ANTHROPIC_API_KEY,      "anthropic/claude-opus-4-5-20251101"],
-  [process.env.OPENAI_API_KEY,         "openai/gpt-5.2"],
-  [process.env.OPENROUTER_API_KEY,     "openrouter/anthropic/claude-opus-4-5"],
-  [process.env.GEMINI_API_KEY,         "google/gemini-2.5-pro"],
-  [opencodeKey,                        "opencode/claude-opus-4-5"],
-  [process.env.COPILOT_GITHUB_TOKEN,   "github-copilot/claude-opus-4-5"],
-  [process.env.XAI_API_KEY,            "xai/grok-3"],
-  [process.env.GROQ_API_KEY,           "groq/llama-3.3-70b-versatile"],
-  [process.env.MISTRAL_API_KEY,        "mistral/mistral-large-latest"],
-  [process.env.CEREBRAS_API_KEY,       "cerebras/llama-3.3-70b"],
-  [process.env.VENICE_API_KEY,         "venice/llama-3.3-70b"],
-  [process.env.MOONSHOT_API_KEY,       "moonshot/kimi-k2.5"],
-  [process.env.KIMI_API_KEY,           "kimi-coding/k2p5"],
-  [process.env.MINIMAX_API_KEY,        "minimax/MiniMax-M2.1"],
-  [process.env.SYNTHETIC_API_KEY,      "synthetic/hf:MiniMaxAI/MiniMax-M2.1"],
-  [process.env.ZAI_API_KEY,            "zai/glm-4.7"],
-  [process.env.AI_GATEWAY_API_KEY,     "vercel-ai-gateway/anthropic/claude-opus-4.5"],
-  [process.env.XIAOMI_API_KEY,         "xiaomi/mimo-v2-flash"],
-  [process.env.AWS_ACCESS_KEY_ID,      "amazon-bedrock/anthropic.claude-opus-4-5-20251101-v1:0"],
-  [ollamaUrl,                          "ollama/llama3.3"],
+  [process.env.ANTHROPIC_API_KEY, "anthropic/claude-opus-4-5-20251101"],
+  [process.env.OPENAI_API_KEY, "openai/gpt-5.2"],
+  [process.env.OPENROUTER_API_KEY, "openrouter/anthropic/claude-opus-4-5"],
+  [process.env.GEMINI_API_KEY, "google/gemini-2.5-pro"],
+  [opencodeKey, "opencode/claude-opus-4-5"],
+  [process.env.COPILOT_GITHUB_TOKEN, "github-copilot/claude-opus-4-5"],
+  [process.env.XAI_API_KEY, "xai/grok-3"],
+  [process.env.GROQ_API_KEY, "groq/llama-3.3-70b-versatile"],
+  [process.env.MISTRAL_API_KEY, "mistral/mistral-large-latest"],
+  [process.env.CEREBRAS_API_KEY, "cerebras/llama-3.3-70b"],
+  [process.env.VENICE_API_KEY, "venice/llama-3.3-70b"],
+  [process.env.MOONSHOT_API_KEY, "moonshot/kimi-k2.5"],
+  [process.env.KIMI_API_KEY, "kimi-coding/k2p5"],
+  [process.env.MINIMAX_API_KEY, "minimax/MiniMax-M2.1"],
+  [process.env.SYNTHETIC_API_KEY, "synthetic/hf:MiniMaxAI/MiniMax-M2.1"],
+  [process.env.ZAI_API_KEY, "zai/glm-4.7"],
+  [process.env.AI_GATEWAY_API_KEY, "vercel-ai-gateway/anthropic/claude-opus-4.5"],
+  [process.env.XIAOMI_API_KEY, "xiaomi/mimo-v2-flash"],
+  [process.env.AWS_ACCESS_KEY_ID, "amazon-bedrock/anthropic.claude-opus-4-5-20251101-v1:0"],
+  [ollamaUrl, "ollama/llama3.3"],
 ];
 if (process.env.OPENCLAW_PRIMARY_MODEL) {
   // Explicit env var override
@@ -369,33 +381,33 @@ if (process.env.TELEGRAM_BOT_TOKEN) {
   tg.enabled = true;
 
   // strings
-  if (process.env.TELEGRAM_DM_POLICY)              tg.dmPolicy = process.env.TELEGRAM_DM_POLICY;
-  if (process.env.TELEGRAM_GROUP_POLICY)            tg.groupPolicy = process.env.TELEGRAM_GROUP_POLICY;
-  if (process.env.TELEGRAM_REPLY_TO_MODE)           tg.replyToMode = process.env.TELEGRAM_REPLY_TO_MODE;
-  if (process.env.TELEGRAM_CHUNK_MODE)              tg.chunkMode = process.env.TELEGRAM_CHUNK_MODE;
-  if (process.env.TELEGRAM_STREAM_MODE)             tg.streamMode = process.env.TELEGRAM_STREAM_MODE;
-  if (process.env.TELEGRAM_REACTION_NOTIFICATIONS)  tg.reactionNotifications = process.env.TELEGRAM_REACTION_NOTIFICATIONS;
-  if (process.env.TELEGRAM_REACTION_LEVEL)          tg.reactionLevel = process.env.TELEGRAM_REACTION_LEVEL;
-  if (process.env.TELEGRAM_PROXY)                   tg.proxy = process.env.TELEGRAM_PROXY;
-  if (process.env.TELEGRAM_WEBHOOK_URL)             tg.webhookUrl = process.env.TELEGRAM_WEBHOOK_URL;
-  if (process.env.TELEGRAM_WEBHOOK_SECRET)          tg.webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
-  if (process.env.TELEGRAM_WEBHOOK_PATH)            tg.webhookPath = process.env.TELEGRAM_WEBHOOK_PATH;
-  if (process.env.TELEGRAM_MESSAGE_PREFIX)          tg.messagePrefix = process.env.TELEGRAM_MESSAGE_PREFIX;
+  if (process.env.TELEGRAM_DM_POLICY) tg.dmPolicy = process.env.TELEGRAM_DM_POLICY;
+  if (process.env.TELEGRAM_GROUP_POLICY) tg.groupPolicy = process.env.TELEGRAM_GROUP_POLICY;
+  if (process.env.TELEGRAM_REPLY_TO_MODE) tg.replyToMode = process.env.TELEGRAM_REPLY_TO_MODE;
+  if (process.env.TELEGRAM_CHUNK_MODE) tg.chunkMode = process.env.TELEGRAM_CHUNK_MODE;
+  if (process.env.TELEGRAM_STREAM_MODE) tg.streamMode = process.env.TELEGRAM_STREAM_MODE;
+  if (process.env.TELEGRAM_REACTION_NOTIFICATIONS) tg.reactionNotifications = process.env.TELEGRAM_REACTION_NOTIFICATIONS;
+  if (process.env.TELEGRAM_REACTION_LEVEL) tg.reactionLevel = process.env.TELEGRAM_REACTION_LEVEL;
+  if (process.env.TELEGRAM_PROXY) tg.proxy = process.env.TELEGRAM_PROXY;
+  if (process.env.TELEGRAM_WEBHOOK_URL) tg.webhookUrl = process.env.TELEGRAM_WEBHOOK_URL;
+  if (process.env.TELEGRAM_WEBHOOK_SECRET) tg.webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
+  if (process.env.TELEGRAM_WEBHOOK_PATH) tg.webhookPath = process.env.TELEGRAM_WEBHOOK_PATH;
+  if (process.env.TELEGRAM_MESSAGE_PREFIX) tg.messagePrefix = process.env.TELEGRAM_MESSAGE_PREFIX;
 
   // booleans
-  if (process.env.TELEGRAM_LINK_PREVIEW)            tg.linkPreview = process.env.TELEGRAM_LINK_PREVIEW !== "false";
-  if (process.env.TELEGRAM_ACTIONS_REACTIONS)  {
+  if (process.env.TELEGRAM_LINK_PREVIEW) tg.linkPreview = process.env.TELEGRAM_LINK_PREVIEW !== "false";
+  if (process.env.TELEGRAM_ACTIONS_REACTIONS) {
     ensure(tg, "actions");
     tg.actions.reactions = process.env.TELEGRAM_ACTIONS_REACTIONS !== "false";
   }
-  if (process.env.TELEGRAM_ACTIONS_STICKER)    {
+  if (process.env.TELEGRAM_ACTIONS_STICKER) {
     ensure(tg, "actions");
     tg.actions.sticker = process.env.TELEGRAM_ACTIONS_STICKER === "true";
   }
 
   // numbers
-  if (process.env.TELEGRAM_TEXT_CHUNK_LIMIT)        tg.textChunkLimit = parseInt(process.env.TELEGRAM_TEXT_CHUNK_LIMIT, 10);
-  if (process.env.TELEGRAM_MEDIA_MAX_MB)            tg.mediaMaxMb = parseInt(process.env.TELEGRAM_MEDIA_MAX_MB, 10);
+  if (process.env.TELEGRAM_TEXT_CHUNK_LIMIT) tg.textChunkLimit = parseInt(process.env.TELEGRAM_TEXT_CHUNK_LIMIT, 10);
+  if (process.env.TELEGRAM_MEDIA_MAX_MB) tg.mediaMaxMb = parseInt(process.env.TELEGRAM_MEDIA_MAX_MB, 10);
 
   // csv → array (user IDs as integers, usernames as strings)
   if (process.env.TELEGRAM_ALLOW_FROM) {
@@ -430,40 +442,40 @@ if (process.env.DISCORD_BOT_TOKEN) {
   dc.enabled = true;
 
   // strings
-  if (process.env.DISCORD_DM_POLICY)              { ensure(dc, "dm"); dc.dm.policy = process.env.DISCORD_DM_POLICY; }
-  if (process.env.DISCORD_GROUP_POLICY)            dc.groupPolicy = process.env.DISCORD_GROUP_POLICY;
-  if (process.env.DISCORD_REPLY_TO_MODE)           dc.replyToMode = process.env.DISCORD_REPLY_TO_MODE;
-  if (process.env.DISCORD_CHUNK_MODE)              dc.chunkMode = process.env.DISCORD_CHUNK_MODE;
-  if (process.env.DISCORD_REACTION_NOTIFICATIONS)  dc.reactionNotifications = process.env.DISCORD_REACTION_NOTIFICATIONS;
-  if (process.env.DISCORD_MESSAGE_PREFIX)           dc.messagePrefix = process.env.DISCORD_MESSAGE_PREFIX;
+  if (process.env.DISCORD_DM_POLICY) { ensure(dc, "dm"); dc.dm.policy = process.env.DISCORD_DM_POLICY; }
+  if (process.env.DISCORD_GROUP_POLICY) dc.groupPolicy = process.env.DISCORD_GROUP_POLICY;
+  if (process.env.DISCORD_REPLY_TO_MODE) dc.replyToMode = process.env.DISCORD_REPLY_TO_MODE;
+  if (process.env.DISCORD_CHUNK_MODE) dc.chunkMode = process.env.DISCORD_CHUNK_MODE;
+  if (process.env.DISCORD_REACTION_NOTIFICATIONS) dc.reactionNotifications = process.env.DISCORD_REACTION_NOTIFICATIONS;
+  if (process.env.DISCORD_MESSAGE_PREFIX) dc.messagePrefix = process.env.DISCORD_MESSAGE_PREFIX;
 
   // booleans (default-true → !== "false", default-false → === "true")
-  if (process.env.DISCORD_ALLOW_BOTS)              dc.allowBots = process.env.DISCORD_ALLOW_BOTS === "true";
-  if (process.env.DISCORD_ACTIONS_REACTIONS)        { ensure(dc, "actions"); dc.actions.reactions = process.env.DISCORD_ACTIONS_REACTIONS !== "false"; }
-  if (process.env.DISCORD_ACTIONS_STICKERS)         { ensure(dc, "actions"); dc.actions.stickers = process.env.DISCORD_ACTIONS_STICKERS !== "false"; }
-  if (process.env.DISCORD_ACTIONS_EMOJI_UPLOADS)    { ensure(dc, "actions"); dc.actions.emojiUploads = process.env.DISCORD_ACTIONS_EMOJI_UPLOADS !== "false"; }
-  if (process.env.DISCORD_ACTIONS_STICKER_UPLOADS)  { ensure(dc, "actions"); dc.actions.stickerUploads = process.env.DISCORD_ACTIONS_STICKER_UPLOADS !== "false"; }
-  if (process.env.DISCORD_ACTIONS_POLLS)            { ensure(dc, "actions"); dc.actions.polls = process.env.DISCORD_ACTIONS_POLLS !== "false"; }
-  if (process.env.DISCORD_ACTIONS_PERMISSIONS)      { ensure(dc, "actions"); dc.actions.permissions = process.env.DISCORD_ACTIONS_PERMISSIONS !== "false"; }
-  if (process.env.DISCORD_ACTIONS_MESSAGES)         { ensure(dc, "actions"); dc.actions.messages = process.env.DISCORD_ACTIONS_MESSAGES !== "false"; }
-  if (process.env.DISCORD_ACTIONS_THREADS)          { ensure(dc, "actions"); dc.actions.threads = process.env.DISCORD_ACTIONS_THREADS !== "false"; }
-  if (process.env.DISCORD_ACTIONS_PINS)             { ensure(dc, "actions"); dc.actions.pins = process.env.DISCORD_ACTIONS_PINS !== "false"; }
-  if (process.env.DISCORD_ACTIONS_SEARCH)           { ensure(dc, "actions"); dc.actions.search = process.env.DISCORD_ACTIONS_SEARCH !== "false"; }
-  if (process.env.DISCORD_ACTIONS_MEMBER_INFO)      { ensure(dc, "actions"); dc.actions.memberInfo = process.env.DISCORD_ACTIONS_MEMBER_INFO !== "false"; }
-  if (process.env.DISCORD_ACTIONS_ROLE_INFO)        { ensure(dc, "actions"); dc.actions.roleInfo = process.env.DISCORD_ACTIONS_ROLE_INFO !== "false"; }
-  if (process.env.DISCORD_ACTIONS_CHANNEL_INFO)     { ensure(dc, "actions"); dc.actions.channelInfo = process.env.DISCORD_ACTIONS_CHANNEL_INFO !== "false"; }
-  if (process.env.DISCORD_ACTIONS_CHANNELS)         { ensure(dc, "actions"); dc.actions.channels = process.env.DISCORD_ACTIONS_CHANNELS !== "false"; }
-  if (process.env.DISCORD_ACTIONS_VOICE_STATUS)     { ensure(dc, "actions"); dc.actions.voiceStatus = process.env.DISCORD_ACTIONS_VOICE_STATUS !== "false"; }
-  if (process.env.DISCORD_ACTIONS_EVENTS)           { ensure(dc, "actions"); dc.actions.events = process.env.DISCORD_ACTIONS_EVENTS !== "false"; }
-  if (process.env.DISCORD_ACTIONS_ROLES)            { ensure(dc, "actions"); dc.actions.roles = process.env.DISCORD_ACTIONS_ROLES === "true"; }
-  if (process.env.DISCORD_ACTIONS_MODERATION)       { ensure(dc, "actions"); dc.actions.moderation = process.env.DISCORD_ACTIONS_MODERATION === "true"; }
+  if (process.env.DISCORD_ALLOW_BOTS) dc.allowBots = process.env.DISCORD_ALLOW_BOTS === "true";
+  if (process.env.DISCORD_ACTIONS_REACTIONS) { ensure(dc, "actions"); dc.actions.reactions = process.env.DISCORD_ACTIONS_REACTIONS !== "false"; }
+  if (process.env.DISCORD_ACTIONS_STICKERS) { ensure(dc, "actions"); dc.actions.stickers = process.env.DISCORD_ACTIONS_STICKERS !== "false"; }
+  if (process.env.DISCORD_ACTIONS_EMOJI_UPLOADS) { ensure(dc, "actions"); dc.actions.emojiUploads = process.env.DISCORD_ACTIONS_EMOJI_UPLOADS !== "false"; }
+  if (process.env.DISCORD_ACTIONS_STICKER_UPLOADS) { ensure(dc, "actions"); dc.actions.stickerUploads = process.env.DISCORD_ACTIONS_STICKER_UPLOADS !== "false"; }
+  if (process.env.DISCORD_ACTIONS_POLLS) { ensure(dc, "actions"); dc.actions.polls = process.env.DISCORD_ACTIONS_POLLS !== "false"; }
+  if (process.env.DISCORD_ACTIONS_PERMISSIONS) { ensure(dc, "actions"); dc.actions.permissions = process.env.DISCORD_ACTIONS_PERMISSIONS !== "false"; }
+  if (process.env.DISCORD_ACTIONS_MESSAGES) { ensure(dc, "actions"); dc.actions.messages = process.env.DISCORD_ACTIONS_MESSAGES !== "false"; }
+  if (process.env.DISCORD_ACTIONS_THREADS) { ensure(dc, "actions"); dc.actions.threads = process.env.DISCORD_ACTIONS_THREADS !== "false"; }
+  if (process.env.DISCORD_ACTIONS_PINS) { ensure(dc, "actions"); dc.actions.pins = process.env.DISCORD_ACTIONS_PINS !== "false"; }
+  if (process.env.DISCORD_ACTIONS_SEARCH) { ensure(dc, "actions"); dc.actions.search = process.env.DISCORD_ACTIONS_SEARCH !== "false"; }
+  if (process.env.DISCORD_ACTIONS_MEMBER_INFO) { ensure(dc, "actions"); dc.actions.memberInfo = process.env.DISCORD_ACTIONS_MEMBER_INFO !== "false"; }
+  if (process.env.DISCORD_ACTIONS_ROLE_INFO) { ensure(dc, "actions"); dc.actions.roleInfo = process.env.DISCORD_ACTIONS_ROLE_INFO !== "false"; }
+  if (process.env.DISCORD_ACTIONS_CHANNEL_INFO) { ensure(dc, "actions"); dc.actions.channelInfo = process.env.DISCORD_ACTIONS_CHANNEL_INFO !== "false"; }
+  if (process.env.DISCORD_ACTIONS_CHANNELS) { ensure(dc, "actions"); dc.actions.channels = process.env.DISCORD_ACTIONS_CHANNELS !== "false"; }
+  if (process.env.DISCORD_ACTIONS_VOICE_STATUS) { ensure(dc, "actions"); dc.actions.voiceStatus = process.env.DISCORD_ACTIONS_VOICE_STATUS !== "false"; }
+  if (process.env.DISCORD_ACTIONS_EVENTS) { ensure(dc, "actions"); dc.actions.events = process.env.DISCORD_ACTIONS_EVENTS !== "false"; }
+  if (process.env.DISCORD_ACTIONS_ROLES) { ensure(dc, "actions"); dc.actions.roles = process.env.DISCORD_ACTIONS_ROLES === "true"; }
+  if (process.env.DISCORD_ACTIONS_MODERATION) { ensure(dc, "actions"); dc.actions.moderation = process.env.DISCORD_ACTIONS_MODERATION === "true"; }
 
   // numbers
-  if (process.env.DISCORD_TEXT_CHUNK_LIMIT)         dc.textChunkLimit = parseInt(process.env.DISCORD_TEXT_CHUNK_LIMIT, 10);
-  if (process.env.DISCORD_MAX_LINES_PER_MESSAGE)    dc.maxLinesPerMessage = parseInt(process.env.DISCORD_MAX_LINES_PER_MESSAGE, 10);
-  if (process.env.DISCORD_MEDIA_MAX_MB)             dc.mediaMaxMb = parseInt(process.env.DISCORD_MEDIA_MAX_MB, 10);
-  if (process.env.DISCORD_HISTORY_LIMIT)            dc.historyLimit = parseInt(process.env.DISCORD_HISTORY_LIMIT, 10);
-  if (process.env.DISCORD_DM_HISTORY_LIMIT)         dc.dmHistoryLimit = parseInt(process.env.DISCORD_DM_HISTORY_LIMIT, 10);
+  if (process.env.DISCORD_TEXT_CHUNK_LIMIT) dc.textChunkLimit = parseInt(process.env.DISCORD_TEXT_CHUNK_LIMIT, 10);
+  if (process.env.DISCORD_MAX_LINES_PER_MESSAGE) dc.maxLinesPerMessage = parseInt(process.env.DISCORD_MAX_LINES_PER_MESSAGE, 10);
+  if (process.env.DISCORD_MEDIA_MAX_MB) dc.mediaMaxMb = parseInt(process.env.DISCORD_MEDIA_MAX_MB, 10);
+  if (process.env.DISCORD_HISTORY_LIMIT) dc.historyLimit = parseInt(process.env.DISCORD_HISTORY_LIMIT, 10);
+  if (process.env.DISCORD_DM_HISTORY_LIMIT) dc.dmHistoryLimit = parseInt(process.env.DISCORD_DM_HISTORY_LIMIT, 10);
 
   // csv → array (always strings)
   if (process.env.DISCORD_DM_ALLOW_FROM) {
@@ -483,29 +495,29 @@ if (process.env.SLACK_BOT_TOKEN && process.env.SLACK_APP_TOKEN) {
   sl.enabled = true;
 
   // strings
-  if (process.env.SLACK_USER_TOKEN)              sl.userToken = process.env.SLACK_USER_TOKEN;
-  if (process.env.SLACK_SIGNING_SECRET)          sl.signingSecret = process.env.SLACK_SIGNING_SECRET;
-  if (process.env.SLACK_MODE)                    sl.mode = process.env.SLACK_MODE;
-  if (process.env.SLACK_WEBHOOK_PATH)            sl.webhookPath = process.env.SLACK_WEBHOOK_PATH;
-  if (process.env.SLACK_DM_POLICY)               { ensure(sl, "dm"); sl.dm.policy = process.env.SLACK_DM_POLICY; }
-  if (process.env.SLACK_GROUP_POLICY)            sl.groupPolicy = process.env.SLACK_GROUP_POLICY;
-  if (process.env.SLACK_REPLY_TO_MODE)           sl.replyToMode = process.env.SLACK_REPLY_TO_MODE;
-  if (process.env.SLACK_REACTION_NOTIFICATIONS)  sl.reactionNotifications = process.env.SLACK_REACTION_NOTIFICATIONS;
-  if (process.env.SLACK_CHUNK_MODE)              sl.chunkMode = process.env.SLACK_CHUNK_MODE;
-  if (process.env.SLACK_MESSAGE_PREFIX)          sl.messagePrefix = process.env.SLACK_MESSAGE_PREFIX;
+  if (process.env.SLACK_USER_TOKEN) sl.userToken = process.env.SLACK_USER_TOKEN;
+  if (process.env.SLACK_SIGNING_SECRET) sl.signingSecret = process.env.SLACK_SIGNING_SECRET;
+  if (process.env.SLACK_MODE) sl.mode = process.env.SLACK_MODE;
+  if (process.env.SLACK_WEBHOOK_PATH) sl.webhookPath = process.env.SLACK_WEBHOOK_PATH;
+  if (process.env.SLACK_DM_POLICY) { ensure(sl, "dm"); sl.dm.policy = process.env.SLACK_DM_POLICY; }
+  if (process.env.SLACK_GROUP_POLICY) sl.groupPolicy = process.env.SLACK_GROUP_POLICY;
+  if (process.env.SLACK_REPLY_TO_MODE) sl.replyToMode = process.env.SLACK_REPLY_TO_MODE;
+  if (process.env.SLACK_REACTION_NOTIFICATIONS) sl.reactionNotifications = process.env.SLACK_REACTION_NOTIFICATIONS;
+  if (process.env.SLACK_CHUNK_MODE) sl.chunkMode = process.env.SLACK_CHUNK_MODE;
+  if (process.env.SLACK_MESSAGE_PREFIX) sl.messagePrefix = process.env.SLACK_MESSAGE_PREFIX;
 
   // booleans (default-true → !== "false", default-false → === "true")
-  if (process.env.SLACK_ALLOW_BOTS)              sl.allowBots = process.env.SLACK_ALLOW_BOTS === "true";
-  if (process.env.SLACK_ACTIONS_REACTIONS)        { ensure(sl, "actions"); sl.actions.reactions = process.env.SLACK_ACTIONS_REACTIONS !== "false"; }
-  if (process.env.SLACK_ACTIONS_MESSAGES)         { ensure(sl, "actions"); sl.actions.messages = process.env.SLACK_ACTIONS_MESSAGES !== "false"; }
-  if (process.env.SLACK_ACTIONS_PINS)             { ensure(sl, "actions"); sl.actions.pins = process.env.SLACK_ACTIONS_PINS !== "false"; }
-  if (process.env.SLACK_ACTIONS_MEMBER_INFO)      { ensure(sl, "actions"); sl.actions.memberInfo = process.env.SLACK_ACTIONS_MEMBER_INFO !== "false"; }
-  if (process.env.SLACK_ACTIONS_EMOJI_LIST)       { ensure(sl, "actions"); sl.actions.emojiList = process.env.SLACK_ACTIONS_EMOJI_LIST !== "false"; }
+  if (process.env.SLACK_ALLOW_BOTS) sl.allowBots = process.env.SLACK_ALLOW_BOTS === "true";
+  if (process.env.SLACK_ACTIONS_REACTIONS) { ensure(sl, "actions"); sl.actions.reactions = process.env.SLACK_ACTIONS_REACTIONS !== "false"; }
+  if (process.env.SLACK_ACTIONS_MESSAGES) { ensure(sl, "actions"); sl.actions.messages = process.env.SLACK_ACTIONS_MESSAGES !== "false"; }
+  if (process.env.SLACK_ACTIONS_PINS) { ensure(sl, "actions"); sl.actions.pins = process.env.SLACK_ACTIONS_PINS !== "false"; }
+  if (process.env.SLACK_ACTIONS_MEMBER_INFO) { ensure(sl, "actions"); sl.actions.memberInfo = process.env.SLACK_ACTIONS_MEMBER_INFO !== "false"; }
+  if (process.env.SLACK_ACTIONS_EMOJI_LIST) { ensure(sl, "actions"); sl.actions.emojiList = process.env.SLACK_ACTIONS_EMOJI_LIST !== "false"; }
 
   // numbers
-  if (process.env.SLACK_HISTORY_LIMIT)           sl.historyLimit = parseInt(process.env.SLACK_HISTORY_LIMIT, 10);
-  if (process.env.SLACK_TEXT_CHUNK_LIMIT)        sl.textChunkLimit = parseInt(process.env.SLACK_TEXT_CHUNK_LIMIT, 10);
-  if (process.env.SLACK_MEDIA_MAX_MB)            sl.mediaMaxMb = parseInt(process.env.SLACK_MEDIA_MAX_MB, 10);
+  if (process.env.SLACK_HISTORY_LIMIT) sl.historyLimit = parseInt(process.env.SLACK_HISTORY_LIMIT, 10);
+  if (process.env.SLACK_TEXT_CHUNK_LIMIT) sl.textChunkLimit = parseInt(process.env.SLACK_TEXT_CHUNK_LIMIT, 10);
+  if (process.env.SLACK_MEDIA_MAX_MB) sl.mediaMaxMb = parseInt(process.env.SLACK_MEDIA_MAX_MB, 10);
 
   // csv → array (always strings)
   if (process.env.SLACK_DM_ALLOW_FROM) {
@@ -524,12 +536,12 @@ if (process.env.WHATSAPP_ENABLED === "true" || process.env.WHATSAPP_ENABLED === 
   wa.enabled = true;
 
   // strings
-  if (process.env.WHATSAPP_DM_POLICY)        wa.dmPolicy = process.env.WHATSAPP_DM_POLICY;
-  if (process.env.WHATSAPP_GROUP_POLICY)      wa.groupPolicy = process.env.WHATSAPP_GROUP_POLICY;
-  if (process.env.WHATSAPP_MESSAGE_PREFIX)    wa.messagePrefix = process.env.WHATSAPP_MESSAGE_PREFIX;
+  if (process.env.WHATSAPP_DM_POLICY) wa.dmPolicy = process.env.WHATSAPP_DM_POLICY;
+  if (process.env.WHATSAPP_GROUP_POLICY) wa.groupPolicy = process.env.WHATSAPP_GROUP_POLICY;
+  if (process.env.WHATSAPP_MESSAGE_PREFIX) wa.messagePrefix = process.env.WHATSAPP_MESSAGE_PREFIX;
 
   // booleans
-  if (process.env.WHATSAPP_SELF_CHAT_MODE)    wa.selfChatMode = process.env.WHATSAPP_SELF_CHAT_MODE === "true";
+  if (process.env.WHATSAPP_SELF_CHAT_MODE) wa.selfChatMode = process.env.WHATSAPP_SELF_CHAT_MODE === "true";
   if (process.env.WHATSAPP_SEND_READ_RECEIPTS) wa.sendReadReceipts = process.env.WHATSAPP_SEND_READ_RECEIPTS !== "false";
   if (process.env.WHATSAPP_ACTIONS_REACTIONS) {
     ensure(wa, "actions");
@@ -537,20 +549,20 @@ if (process.env.WHATSAPP_ENABLED === "true" || process.env.WHATSAPP_ENABLED === 
   }
 
   // numbers
-  if (process.env.WHATSAPP_MEDIA_MAX_MB)      wa.mediaMaxMb = parseInt(process.env.WHATSAPP_MEDIA_MAX_MB, 10);
-  if (process.env.WHATSAPP_HISTORY_LIMIT)     wa.historyLimit = parseInt(process.env.WHATSAPP_HISTORY_LIMIT, 10);
-  if (process.env.WHATSAPP_DM_HISTORY_LIMIT)  wa.dmHistoryLimit = parseInt(process.env.WHATSAPP_DM_HISTORY_LIMIT, 10);
+  if (process.env.WHATSAPP_MEDIA_MAX_MB) wa.mediaMaxMb = parseInt(process.env.WHATSAPP_MEDIA_MAX_MB, 10);
+  if (process.env.WHATSAPP_HISTORY_LIMIT) wa.historyLimit = parseInt(process.env.WHATSAPP_HISTORY_LIMIT, 10);
+  if (process.env.WHATSAPP_DM_HISTORY_LIMIT) wa.dmHistoryLimit = parseInt(process.env.WHATSAPP_DM_HISTORY_LIMIT, 10);
 
   // csv → array (E.164 phone numbers, always strings)
-  if (process.env.WHATSAPP_ALLOW_FROM)        wa.allowFrom = process.env.WHATSAPP_ALLOW_FROM.split(",").map(s => s.trim());
-  if (process.env.WHATSAPP_GROUP_ALLOW_FROM)  wa.groupAllowFrom = process.env.WHATSAPP_GROUP_ALLOW_FROM.split(",").map(s => s.trim());
+  if (process.env.WHATSAPP_ALLOW_FROM) wa.allowFrom = process.env.WHATSAPP_ALLOW_FROM.split(",").map(s => s.trim());
+  if (process.env.WHATSAPP_GROUP_ALLOW_FROM) wa.groupAllowFrom = process.env.WHATSAPP_GROUP_ALLOW_FROM.split(",").map(s => s.trim());
 
   // ack reaction (nested object)
   if (process.env.WHATSAPP_ACK_REACTION_EMOJI || process.env.WHATSAPP_ACK_REACTION_DIRECT || process.env.WHATSAPP_ACK_REACTION_GROUP) {
     wa.ackReaction = wa.ackReaction || {};
-    if (process.env.WHATSAPP_ACK_REACTION_EMOJI)  wa.ackReaction.emoji = process.env.WHATSAPP_ACK_REACTION_EMOJI;
+    if (process.env.WHATSAPP_ACK_REACTION_EMOJI) wa.ackReaction.emoji = process.env.WHATSAPP_ACK_REACTION_EMOJI;
     if (process.env.WHATSAPP_ACK_REACTION_DIRECT) wa.ackReaction.direct = process.env.WHATSAPP_ACK_REACTION_DIRECT !== "false";
-    if (process.env.WHATSAPP_ACK_REACTION_GROUP)  wa.ackReaction.group = process.env.WHATSAPP_ACK_REACTION_GROUP;
+    if (process.env.WHATSAPP_ACK_REACTION_GROUP) wa.ackReaction.group = process.env.WHATSAPP_ACK_REACTION_GROUP;
   }
 } else if (config.channels?.whatsapp) {
   console.log("[configure] WhatsApp channel configured (from custom JSON)");
@@ -567,7 +579,7 @@ if (process.env.HOOKS_ENABLED === "true" || process.env.HOOKS_ENABLED === "1") {
   ensure(config, "hooks");
   config.hooks.enabled = true;
   if (process.env.HOOKS_TOKEN) config.hooks.token = process.env.HOOKS_TOKEN;
-  if (process.env.HOOKS_PATH)  config.hooks.path = process.env.HOOKS_PATH;
+  if (process.env.HOOKS_PATH) config.hooks.path = process.env.HOOKS_PATH;
 } else if (config.hooks) {
   console.log("[configure] hooks configured (from custom JSON)");
 }
