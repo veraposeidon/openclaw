@@ -288,17 +288,33 @@ if (process.env.XIAOMI_API_KEY) {
 }
 
 // Amazon Bedrock (uses AWS credential chain)
+// Custom inference profile ARNs can be set via env vars:
+//   BEDROCK_OPUS_MODEL   — overrides Opus model ID (e.g. arn:aws:bedrock:...)
+//   BEDROCK_SONNET_MODEL — overrides Sonnet model ID
+//   BEDROCK_HAIKU_MODEL  — adds Haiku model (not included by default)
 if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
   console.log("[configure] configuring Amazon Bedrock provider");
   ensure(config, "models", "providers");
   const region = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || "us-east-1";
+
+  // Build model list: use custom ARNs if provided, otherwise fall back to standard IDs
+  const opusId = process.env.BEDROCK_OPUS_MODEL || "anthropic.claude-opus-4-5-20251101-v1:0";
+  const sonnetId = process.env.BEDROCK_SONNET_MODEL || "anthropic.claude-sonnet-4-5-20250929-v1:0";
+  const bedrockModels = [
+    { id: opusId, name: "Claude Opus 4.5 (Bedrock)", contextWindow: 200000 },
+    { id: sonnetId, name: "Claude Sonnet 4.5 (Bedrock)", contextWindow: 200000 },
+  ];
+  if (process.env.BEDROCK_HAIKU_MODEL) {
+    bedrockModels.push({ id: process.env.BEDROCK_HAIKU_MODEL, name: "Claude Haiku (Bedrock)", contextWindow: 200000 });
+  }
+  if (process.env.BEDROCK_OPUS_MODEL) console.log("[configure] Bedrock Opus model (custom):", opusId);
+  if (process.env.BEDROCK_SONNET_MODEL) console.log("[configure] Bedrock Sonnet model (custom):", sonnetId);
+  if (process.env.BEDROCK_HAIKU_MODEL) console.log("[configure] Bedrock Haiku model (custom):", process.env.BEDROCK_HAIKU_MODEL);
+
   config.models.providers["amazon-bedrock"] = {
     api: "bedrock-converse-stream",
     baseUrl: `https://bedrock-runtime.${region}.amazonaws.com`,
-    models: [
-      { id: "anthropic.claude-opus-4-5-20251101-v1:0", name: "Claude Opus 4.5 (Bedrock)", contextWindow: 200000 },
-      { id: "anthropic.claude-sonnet-4-5-20250929-v1:0", name: "Claude Sonnet 4.5 (Bedrock)", contextWindow: 200000 },
-    ],
+    models: bedrockModels,
   };
   ensure(config, "models");
   // providerFilter must be an array; env var may be JSON array, CSV, or plain string
@@ -360,7 +376,7 @@ const primaryCandidates = [
   [process.env.ZAI_API_KEY, "zai/glm-4.7"],
   [process.env.AI_GATEWAY_API_KEY, "vercel-ai-gateway/anthropic/claude-opus-4.5"],
   [process.env.XIAOMI_API_KEY, "xiaomi/mimo-v2-flash"],
-  [process.env.AWS_ACCESS_KEY_ID, "amazon-bedrock/anthropic.claude-opus-4-5-20251101-v1:0"],
+  [process.env.AWS_ACCESS_KEY_ID, `amazon-bedrock/${process.env.BEDROCK_OPUS_MODEL || "anthropic.claude-opus-4-5-20251101-v1:0"}`],
   [ollamaUrl, "ollama/llama3.3"],
 ];
 if (process.env.OPENCLAW_PRIMARY_MODEL) {

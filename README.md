@@ -133,6 +133,9 @@ If a provider env var is removed, that provider section is cleaned from `opencla
 | `AWS_SECRET_ACCESS_KEY` | | AWS secret key. |
 | `AWS_REGION` | `us-east-1` | AWS region for Bedrock runtime endpoint. |
 | `AWS_SESSION_TOKEN` | | Optional session token for temporary credentials. |
+| `BEDROCK_OPUS_MODEL` | `anthropic.claude-opus-4-5-20251101-v1:0` | Override Opus model ID. Supports custom inference profile ARNs (e.g. `arn:aws:bedrock:us-west-2:123456:application-inference-profile/...`). |
+| `BEDROCK_SONNET_MODEL` | `anthropic.claude-sonnet-4-5-20250929-v1:0` | Override Sonnet model ID. Supports custom inference profile ARNs. |
+| `BEDROCK_HAIKU_MODEL` | *(not included)* | Add Haiku model. Set to a model ID or custom inference profile ARN to include it. |
 | `BEDROCK_PROVIDER_FILTER` | `["anthropic"]` | Filter Bedrock model discovery by provider (JSON array or comma-separated string). |
 
 ### Ollama (local models, no API key needed)
